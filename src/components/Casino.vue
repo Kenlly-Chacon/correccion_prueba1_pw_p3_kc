@@ -43,7 +43,7 @@
 
 <script>
 export default {
-  name: "CasinoPokemonImg",
+  name: "CasinoPokemon",
   data() {
     return {
       imagenUno: null,
@@ -64,38 +64,23 @@ export default {
       intento: 0
     }
   },
-  props: {
-    idPokemon: {
-      type: Number,
-      required: true
-    }
-  },
   methods: {
     clickJugar() {
       const vectorRes = this.generarVector()
       this.generarImagenes(vectorRes)
       this.mostrarResultado(vectorRes)
-      this.intentoPuntaje(vectorRes)
+      this.numeroIntentos(vectorRes)
     },
-    intentoPuntaje(vectorRes) {
-      if (this.intento !== 5) {
+    numeroIntentos(vectorRes) {
+      if (this.intento < 5) {
         this.intento += 1
-        if (vectorRes[0] === vectorRes[1] && vectorRes[0] && vectorRes[2] && vectorRes[1] === vectorRes[2]) {
+        if (vectorRes[0] === vectorRes[1] && vectorRes[0] === vectorRes[2]) {
           this.puntaje += 5
-          if (this.puntaje >= 10) {
-            this.desaparecer = false
-            this.mostrarGanar = true
-          }
         } else if (vectorRes[0] === vectorRes[1] || vectorRes[0] === vectorRes[2] || vectorRes[1] === vectorRes[2]) {
           this.puntaje += 2
-          if (this.puntaje >= 10) {
-            this.desaparecer = false
-            this.mostrarGanar = true
-          }
         }
       } else {
-        this.desaparecer = false
-        this.mensajePerdida = true
+        this.totalPuntaje()
       }
     },
     async mostrarResultado(vectorRes) {
@@ -103,6 +88,16 @@ export default {
       this.textoUno = await this.consumirAPI(vectorRes[0])
       this.textoDos = await this.consumirAPI(vectorRes[1])
       this.textoTres = await this.consumirAPI(vectorRes[2])
+    },
+    totalPuntaje() {
+      if (this.puntaje >= 10) {
+        this.desaparecer = false
+        this.mostrarGanar = true
+      }
+      if (this.puntaje < 10) {
+        this.desaparecer = false
+        this.mensajePerdida = true
+      }
     },
     generarImagenes(vectorRes) {
       this.imagenUno = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/" + vectorRes[0] + ".svg"
@@ -125,7 +120,6 @@ export default {
     },
     async consumirAPI(id) {
       const {name} = await fetch("https://pokeapi.co/api/v2/pokemon/" + id).then(result => result.json())
-      console.log("consumirAPI:" + name)
       return name
     },
     reinciar() {

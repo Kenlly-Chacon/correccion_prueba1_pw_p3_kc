@@ -1,42 +1,51 @@
 <template>
 
-  <div class="Container">
+  <div id="container">
+    <!--  Pantalla inicial-->
+    <div v-if="PantallaJuego">
+      <div>
+        <p>Puntaje: {{ puntaje }} </p>
+        <p>Intento: {{ intento }}</p>
+      </div>
 
-    <div v-if="desaparecer">
-      <p>Puntaje: {{ puntaje }} </p>
-      <p>Intento: {{ intento }}</p>
+      <!--      Imagenes-->
+      <div>
+        <div v-if="!mostrar">
+          <img src="../img/negro.png" alt="No se pudo cargar">
+          <img src="../img/negro.png" alt="No se pudo cargar">
+          <img src="../img/negro.png" alt="No se pudo cargar">
+        </div>
+        <div v-if="mostrar">
+          <img :src="imagenUno" alt="No se pudo cargar">
+          <img :src="imagenDos" alt="No se pudo cargar">
+          <img :src="imagenTres" alt="No se pudo cargar">
+        </div>
+      </div>
+
+      <!--      Texto Imagenes-->
+      <div>
+        <p>{{ textoUno }}</p>
+        <p>{{ textoDos }}</p>
+        <p>{{ textoTres }}</p>
+      </div>
+
+      <button v-on:click="clickJugar()">JUGAR</button>
     </div>
 
-    <div v-if="desaparecer">
-      <img v-if=!mostrar src="../img/negro.png" alt="No se pudo cargar">
-      <img v-if=mostrar :src="imagenUno" alt="No se pudo cargar">
-
-      <img v-if=!mostrar src="../img/negro.png" alt="No se pudo cargar">
-      <img v-if=mostrar :src="imagenDos" alt="No se pudo cargar">
-
-      <img v-if=!mostrar src="../img/negro.png" alt="No se pudo cargar">
-      <img v-if=mostrar :src="imagenTres" alt="No se pudo cargar">
-    </div>
-
-    <div v-if="mostrarGanar" class="mostrarGanar">
+    <!--  Pantalla ganar-->
+    <div v-if="pantallaGanar" class="mostrarGanar">
       <p>Puntaje: {{ puntaje }}</p>
       <img id="imagenGanadora" src="../img/congratulations.gif" alt="">
       <p>Felicitaciones has ganado un premio de $10.000,00</p>
+      <button v-on:click="reinciar()">Nuevo Juego</button>
     </div>
 
-    <div v-if="mensajePerdida" class="mensajePerdida">
+    <!--  Pantalla perder-->
+    <div v-if="pantallaPerdida" class="mensajePerdida">
       <p>Haz utilizado tus 5 intentos</p>
       <p>El juego ha terminado, intentalo nuevamente</p>
+      <button v-on:click="reinciar()">Nuevo Juego</button>
     </div>
-
-    <div v-if="desaparecer">
-      <p>{{ textoUno }}</p>
-      <p>{{ textoDos }}</p>
-      <p>{{ textoTres }}</p>
-    </div>
-
-    <button v-if="desaparecer" v-on:click="clickJugar()">JUGAR</button>
-    <button v-if="!desaparecer" v-on:click="reinciar()">Nuevo Juego</button>
   </div>
 
 </template>
@@ -46,30 +55,72 @@ export default {
   name: "CasinoPokemon",
   data() {
     return {
+      puntaje: 0,
+      intento: 0,
+
       imagenUno: null,
-      textoUno: "xxxxxxxxxx",
-
       imagenDos: null,
-      textoDos: "xxxxxxxxxx",
-
       imagenTres: null,
+
+      textoUno: "xxxxxxxxxx",
+      textoDos: "xxxxxxxxxx",
       textoTres: "xxxxxxxxxx",
 
-      mostrar: null,
-      desaparecer: true,
-      mensajePerdida: false,
-      mostrarGanar: false,
-
-      puntaje: 0,
-      intento: 0
+      mostrar: false,
+      PantallaJuego: true,
+      pantallaPerdida: false,
+      pantallaGanar: false
     }
   },
   methods: {
-    clickJugar() {
-      const vectorRes = this.generarVector()
-      this.generarImagenes(vectorRes)
-      this.mostrarResultado(vectorRes)
+    async clickJugar() {
+      const vectorRes = this.vectorAleatorio()
+      const vectorPlantilla = await this.contruirPokemon(vectorRes)
+
+      this.imagenUno = vectorPlantilla[0].ruta
+      this.imagenDos = vectorPlantilla[1].ruta
+      this.imagenTres = vectorPlantilla[2].ruta
+
+      this.textoUno = vectorPlantilla[0].nombre
+      this.textoDos = vectorPlantilla[1].nombre
+      this.textoTres = vectorPlantilla[2].nombre
+
+      this.mostrar = true
+
       this.numeroIntentos(vectorRes)
+    },
+    vectorAleatorio() {
+      const vector = [];
+      vector.length = 5;//le damos el tamaño a este vector
+      for (let i = 0; i < vector.length; i++) {
+        vector[i] = Math.floor(Math.random() * 600) + 1;// del 1 al 600
+      }
+
+      const vectorRes = [];
+      vectorRes.length = 3;//le damos el tamaño a este vector
+      for (let i = 0; i < vectorRes.length; i++) {
+        vectorRes[i] = vector[Math.floor(Math.random() * 3) + 1];
+      }
+      return vectorRes;
+    },
+    async consumiAPI(id) {
+      return await fetch("https://pokeapi.co/api/v2/pokemon/" + id).then(r => r.json())
+    },
+    async contruirPokemon(vectorRes) {
+      const vectorPokemons = []
+      for (const valorActual of vectorRes) {
+        const objp = await this.construirObjetoPokemon(valorActual)
+        vectorPokemons.unshift(objp)
+      }
+      return vectorPokemons
+    },
+    async construirObjetoPokemon(id) {
+      const {name} = await this.consumiAPI(id)
+      const objetoPokemon = {
+        ruta: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/" + id + ".svg",
+        nombre: name
+      }
+      return objetoPokemon
     },
     numeroIntentos(vectorRes) {
       if (this.intento < 5) {
@@ -83,77 +134,43 @@ export default {
         this.totalPuntaje()
       }
     },
-    async mostrarResultado(vectorRes) {
-      this.mostrar = true
-      this.textoUno = await this.consumirAPI(vectorRes[0])
-      this.textoDos = await this.consumirAPI(vectorRes[1])
-      this.textoTres = await this.consumirAPI(vectorRes[2])
-    },
     totalPuntaje() {
       if (this.puntaje >= 10) {
-        this.desaparecer = false
-        this.mostrarGanar = true
+        this.PantallaJuego = false
+        this.pantallaGanar = true
       }
       if (this.puntaje < 10) {
-        this.desaparecer = false
-        this.mensajePerdida = true
+        this.pantallaPerdida = true
+        this.PantallaJuego = false
       }
-    },
-    generarImagenes(vectorRes) {
-      this.imagenUno = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/" + vectorRes[0] + ".svg"
-      this.imagenDos = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/" + vectorRes[1] + ".svg"
-      this.imagenTres = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/dream-world/" + vectorRes[2] + ".svg"
-    },
-    generarVector() {
-      const vector = [];
-      vector.length = 5;//le damos el tamaño a este vector
-      for (let i = 0; i < vector.length; i++) {
-        vector[i] = Math.floor(Math.random() * 600) + 1;
-      }
-
-      const vectorRes = [];
-      vectorRes.length = 3;//le damos el tamaño a este vector
-      for (let i = 0; i < vectorRes.length; i++) {
-        vectorRes[i] = vector[Math.floor(Math.random() * 3) + 1];
-      }
-      return vectorRes;
-    },
-    async consumirAPI(id) {
-      const {name} = await fetch("https://pokeapi.co/api/v2/pokemon/" + id).then(result => result.json())
-      return name
     },
     reinciar() {
       this.mostrar = false
-      this.desaparecer = true
-      this.mensajePerdida = false
-      this.mostrarGanar = false
+      this.PantallaJuego = true
+      this.pantallaPerdida = false
+      this.pantallaGanar = false
       this.intento = 0
       this.puntaje = 0
       this.textoUno = "xxxxxxxxxx"
       this.textoDos = "xxxxxxxxxx"
       this.textoTres = "xxxxxxxxxx"
     }
-  }
+  },
 }
 </script>
 
 <style scoped>
-
 .mostrarGanar {
   color: blue;
 }
 
 .mensajePerdida p {
   display: block;
-  margin-top: 50px;
-}
-
-.mensajePerdida {
   color: red;
-
+  margin: 40px auto;
 }
 
-.Container {
+#container {
   margin-top: 50px;
 }
 
@@ -164,18 +181,22 @@ export default {
   margin: 50px auto;
 }
 
-p {
+section input, label, p {
   text-align: center;
-  font-size: 25px;
-  margin: 0 80px;
   display: inline;
+  width: 40%;
+  margin: 0 90px;
+  font-size: 25px;
+  padding: 7px;
+  border-radius: 10px;
 }
 
 img {
-  position: relative;
-  width: 250px;
-  height: 300px;
-  margin: 15px;
+  /*Siempre dar un tamaño, porque al llamar el api devuelven distintos tamaños*/
+  width: 300px;
+  height: 350px;
+  margin: 30px 20px 0 20px;
+  /*position: relative;*/
 }
 
 button {
@@ -195,5 +216,4 @@ button:hover {
   background-color: darkblue; /* Green */
   color: white;
 }
-
 </style>

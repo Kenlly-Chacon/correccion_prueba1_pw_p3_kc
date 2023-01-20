@@ -37,15 +37,16 @@
       <p>Puntaje: {{ puntaje }}</p>
       <img id="imagenGanadora" src="../img/congratulations.gif" alt="">
       <p>Felicitaciones has ganado un premio de $10.000,00</p>
-      <button v-on:click="reinciar()">Nuevo Juego</button>
     </div>
 
     <!--  Pantalla perder-->
     <div v-if="pantallaPerdida" class="mensajePerdida">
       <p>Haz utilizado tus 5 intentos</p>
       <p>El juego ha terminado, intentalo nuevamente</p>
-      <button v-on:click="reinciar()">Nuevo Juego</button>
     </div>
+
+    <button v-if="!PantallaJuego" v-on:click="reinciar()">Nuevo Juego</button>
+
   </div>
 
 </template>
@@ -143,6 +144,7 @@ export default {
         this.pantallaPerdida = true
         this.PantallaJuego = false
       }
+
     },
     reinciar() {
       this.mostrar = false
